@@ -95,15 +95,13 @@ impl Distance<f32> for DistL1 {
     fn eval(&self, va: &[f32], vb: &[f32]) -> f32 {
         //
         cfg_if::cfg_if! {
-        if #[cfg(feature = "simdeez_f")] {
-            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-                if is_x86_feature_detected!("avx2") {
-                    distance_l1_f32_simdeez(va,vb)
-                }
-                else {
-                    assert_eq!(va.len(), vb.len());
-                    va.iter().zip(vb.iter()).map(|t| (*t.0 - *t.1).abs()).sum()
-                }
+        if #[cfg(all(feature = "simdeez_f", any(target_arch = "x86", target_arch = "x86_64")))] {
+            if is_x86_feature_detected!("avx2") {
+                distance_l1_f32_simdeez(va,vb)
+            }
+            else {
+                assert_eq!(va.len(), vb.len());
+                va.iter().zip(vb.iter()).map(|t| (*t.0 - *t.1).abs()).sum()
             }
         }
         else if #[cfg(feature = "stdsimd")] {
@@ -159,16 +157,13 @@ impl Distance<f32> for DistL2 {
     fn eval(&self, va: &[f32], vb: &[f32]) -> f32 {
         //
         cfg_if::cfg_if! {
-            if #[cfg(feature = "simdeez_f")] {
-            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-            {
+            if #[cfg(all(feature = "simdeez_f", any(target_arch = "x86", target_arch = "x86_64")))] {
                 if is_x86_feature_detected!("avx2") {
                     distance_l2_f32_simdeez(va, vb)
                 }
                 else {
                     scalar_l2_f32(va, vb)
                 }
-            }
             } else if #[cfg(feature = "stdsimd")] {
                 return distance_l2_f32_simd(va, vb);
             }
@@ -268,18 +263,15 @@ impl Distance<f32> for DistDot {
     fn eval(&self, va: &[f32], vb: &[f32]) -> f32 {
         //
         cfg_if::cfg_if! {
-            if #[cfg(feature = "simdeez_f")] {
-                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                {
-                    if is_x86_feature_detected!("avx2") {
-                        distance_dot_f32_simdeez(va, vb)
-                    } else if is_x86_feature_detected!("sse2") {
-                        distance_dot_f32_simdeez(va, vb)
-                    }
-                    else {
-                        return scalar_dot_f32(va, vb);
-                    }
-                } // end x86
+            if #[cfg(all(feature = "simdeez_f", any(target_arch = "x86", target_arch = "x86_64")))] {
+                if is_x86_feature_detected!("avx2") {
+                    distance_dot_f32_simdeez(va, vb)
+                } else if is_x86_feature_detected!("sse2") {
+                    distance_dot_f32_simdeez(va, vb)
+                }
+                else {
+                    return scalar_dot_f32(va, vb);
+                }
             } else if #[cfg(feature = "stdsimd")] {
                 return distance_dot_f32_simd_iter(va,vb);
             }
