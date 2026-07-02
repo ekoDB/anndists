@@ -29,7 +29,7 @@ simd_runtime_generate!(
         // horizontal add
         dist = S::Vf32::horizontal_add(dist_simd);
         // remaining
-        for i in 0..va.len() {
+        for i in 0..a.len() {
             //        log::debug!("distance_l1_f32, i {:?} len {:?} ", i, va.len());
             dist += (a[i] - b[i]).abs();
         }
@@ -63,7 +63,7 @@ simd_runtime_generate!(
         //
         dist = S::Vf32::horizontal_add(dist_simd);
         // remaining
-        for i in 0..va.len() {
+        for i in 0..a.len() {
             dist += (a[i] - b[i]) * (a[i] - b[i]);
         }
         assert!(dist >= 0.);
@@ -270,6 +270,43 @@ mod tests {
         let _ = builder.is_test(true).try_init();
         println!("\n ************** initializing logger *****************\n");
         1
+    }
+
+    #[test]
+    fn test_simdeez_l1_l2_residual() {
+        init_log();
+        // Regression test: the residual loops after the vectorized pass must
+        // iterate over the REMAINING slice (a.len()), not the full input
+        // (va.len()). Iterating the full length indexes past the residual
+        // slice and panics for any input at least one simd width long.
+        // Sweep lengths across simd-width multiples and remainders.
+        for len in 1..=40usize {
+            let va: Vec<f32> = (0..len).map(|i| i as f32 * 0.5).collect();
+            let vb: Vec<f32> = (0..len).map(|i| (len - i) as f32 * 0.25).collect();
+            let l1_simd = distance_l1_f32_simdeez(&va, &vb);
+            let l1_scalar: f32 = va.iter().zip(&vb).map(|(x, y)| (x - y).abs()).sum();
+            assert!(
+                (l1_simd - l1_scalar).abs() <= 1.0e-4 * l1_scalar.max(1.0),
+                "L1 mismatch at len {}: simd {} scalar {}",
+                len,
+                l1_simd,
+                l1_scalar
+            );
+            let l2_simd = distance_l2_f32_simdeez(&va, &vb);
+            let l2_scalar: f32 = va
+                .iter()
+                .zip(&vb)
+                .map(|(x, y)| (x - y) * (x - y))
+                .sum::<f32>()
+                .sqrt();
+            assert!(
+                (l2_simd - l2_scalar).abs() <= 1.0e-4 * l2_scalar.max(1.0),
+                "L2 mismatch at len {}: simd {} scalar {}",
+                len,
+                l2_simd,
+                l2_scalar
+            );
+        }
     }
 
     #[test]
