@@ -324,7 +324,7 @@ mod tests {
                 let between = Uniform::<i32>::try_from(-imax..imax).unwrap();
                 let va: Vec<i32> = (0..i).map(|_| between.sample(&mut rng)).collect();
                 let vb: Vec<i32> = (0..i).map(|_| between.sample(&mut rng)).collect();
-                let simd_dist = distance_hamming_i32_simdeez(&va, &vb) as f32;
+                let simd_dist = distance_hamming_i32_simdeez(&va, &vb);
 
                 let easy_dist: u32 = va
                     .iter()
@@ -365,7 +365,7 @@ mod tests {
                 let mut vb: Vec<f64> = (0..i).map(|_| between.sample(&mut rng)).collect();
                 // reset half of vb to va
                 vb[..(i / 2)].copy_from_slice(&va[..(i / 2)]);
-                let simd_dist = distance_hamming_f64(&va, &vb) as f32;
+                let simd_dist = distance_hamming_f64(&va, &vb);
 
                 let j_exact = ((i / 2) as f32) / (i as f32);
                 let easy_dist: u32 = va
