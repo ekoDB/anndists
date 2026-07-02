@@ -18,8 +18,8 @@ simd_runtime_generate!(
         let mut dist_simd = S::Vf32::zeroes();
         //
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vf32::load_from_slice(&a);
-            let xb = S::Vf32::load_from_slice(&b);
+            let xa = S::Vf32::load_from_slice(a);
+            let xb = S::Vf32::load_from_slice(b);
             let delta = S::Vf32::abs(xa - xb);
             dist_simd += delta;
             //
@@ -51,8 +51,8 @@ simd_runtime_generate!(
         let mut dist_simd = S::Vf32::zeroes();
 
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vf32::load_from_slice(&a);
-            let xb = S::Vf32::load_from_slice(&b);
+            let xa = S::Vf32::load_from_slice(a);
+            let xb = S::Vf32::load_from_slice(b);
             let mut delta = xa - xb;
             delta *= delta;
             dist_simd += delta;
@@ -84,8 +84,8 @@ simd_runtime_generate!(
         let mut dot_simd = S::Vf32::zeroes();
         //
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vf32::load_from_slice(&a);
-            let xb = S::Vf32::load_from_slice(&b);
+            let xa = S::Vf32::load_from_slice(a);
+            let xb = S::Vf32::load_from_slice(b);
             let delta = xa * xb;
             dot_simd += delta;
             // shift
@@ -116,8 +116,8 @@ simd_runtime_generate!(
         let mut dist: f32;
         //
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vf32::load_from_slice(&a);
-            let xb = S::Vf32::load_from_slice(&b);
+            let xa = S::Vf32::load_from_slice(a);
+            let xb = S::Vf32::load_from_slice(b);
             let prod = xa * xb;
             let prod_s = S::Vf32::sqrt(prod);
             dist_simd += prod_s;
@@ -150,14 +150,14 @@ simd_runtime_generate!(
         let mut dist: f32;
         //
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vf32::load_from_slice(&a);
-            let xb = S::Vf32::load_from_slice(&b);
+            let xa = S::Vf32::load_from_slice(a);
+            let xb = S::Vf32::load_from_slice(b);
             let delta = xa - xb;
             for j in 0..S::Vf32::WIDTH {
                 // take care of zeros!
                 logslice.push((xa[j].max(M_MIN) / xb[j].max(M_MIN)).ln());
             }
-            let prod_s = delta * S::Vf32::load_from_slice_exact(&logslice.as_slice()).unwrap();
+            let prod_s = delta * S::Vf32::load_from_slice_exact(logslice.as_slice()).unwrap();
             dist_simd += prod_s;
             logslice.clear();
             // shift
@@ -189,8 +189,8 @@ simd_runtime_generate!(
         //
         let mut dist_simd = S::Vi32::zeroes();
         while a.len() >= S::Vf32::WIDTH {
-            let xa = S::Vi32::load_from_slice(&a);
-            let xb = S::Vi32::load_from_slice(&b);
+            let xa = S::Vi32::load_from_slice(a);
+            let xb = S::Vi32::load_from_slice(b);
             let delta = S::Vi32::cmp_neq(xa, xb);
             dist_simd += delta;
             // shift
@@ -226,8 +226,8 @@ simd_runtime_generate!(
         let mut dist_simd = S::Vi64::zeroes();
         //    log::debug!("initial simd_res : {:?}", dist_simd);
         while a.len() >= S::Vf64::WIDTH {
-            let xa = S::Vf64::load_from_slice(&a);
-            let xb = S::Vf64::load_from_slice(&b);
+            let xa = S::Vf64::load_from_slice(a);
+            let xb = S::Vf64::load_from_slice(b);
             let delta = S::Vf64::cmp_neq(xa, xb);
             let delta_i = delta.bitcast_i64();
             //        log::debug!("delta_i : , {:?}", delta_i);
@@ -256,8 +256,9 @@ simd_runtime_generate!(
 
 //=======================================================================================
 
-#[cfg(test)]
-
+// The SIMD test bodies are x86-only; gate the whole module so the imports and
+// helpers below don't count as unused on other architectures.
+#[cfg(all(test, any(target_arch = "x86", target_arch = "x86_64")))]
 mod tests {
     use super::*;
     use crate::dist::*;
@@ -268,7 +269,7 @@ mod tests {
         let mut builder = env_logger::Builder::from_default_env();
         let _ = builder.is_test(true).try_init();
         println!("\n ************** initializing logger *****************\n");
-        return 1;
+        1
     }
 
     #[test]
@@ -284,14 +285,8 @@ mod tests {
             for i in 4..size_test {
                 // generer 2 va et vb s des vecteurs<i32> de taille i  avec des valeurs entre -imax et + imax et controler les resultat
                 let between = Uniform::<i32>::try_from(-imax..imax).unwrap();
-                let va: Vec<i32> = (0..i)
-                    .into_iter()
-                    .map(|_| between.sample(&mut rng))
-                    .collect();
-                let vb: Vec<i32> = (0..i)
-                    .into_iter()
-                    .map(|_| between.sample(&mut rng))
-                    .collect();
+                let va: Vec<i32> = (0..i).map(|_| between.sample(&mut rng)).collect();
+                let vb: Vec<i32> = (0..i).map(|_| between.sample(&mut rng)).collect();
                 let simd_dist = distance_hamming_i32_simdeez(&va, &vb) as f32;
 
                 let easy_dist: u32 = va
@@ -329,18 +324,10 @@ mod tests {
             for i in 300..size_test {
                 // generer 2 va et vb s des vecteurs<i32> de taille i  avec des valeurs entre -imax et + imax et controler les resultat
                 let between = Uniform::<f64>::try_from(-fmax..fmax).unwrap();
-                let va: Vec<f64> = (0..i)
-                    .into_iter()
-                    .map(|_| between.sample(&mut rng))
-                    .collect();
-                let mut vb: Vec<f64> = (0..i)
-                    .into_iter()
-                    .map(|_| between.sample(&mut rng))
-                    .collect();
+                let va: Vec<f64> = (0..i).map(|_| between.sample(&mut rng)).collect();
+                let mut vb: Vec<f64> = (0..i).map(|_| between.sample(&mut rng)).collect();
                 // reset half of vb to va
-                for i in 0..i / 2 {
-                    vb[i] = va[i];
-                }
+                vb[..(i / 2)].copy_from_slice(&va[..(i / 2)]);
                 let simd_dist = distance_hamming_f64(&va, &vb) as f32;
 
                 let j_exact = ((i / 2) as f32) / (i as f32);

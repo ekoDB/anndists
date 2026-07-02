@@ -5,7 +5,13 @@
 #[cfg(feature = "stdsimd")]
 use super::distsimd::*;
 
-#[cfg(feature = "simdeez_f")]
+// The simdeez implementations are only called on x86/x86_64 (the call sites
+// below all carry an arch cfg), so gate the import by arch too or it is
+// flagged unused on other architectures.
+#[cfg(all(
+    feature = "simdeez_f",
+    any(target_arch = "x86", target_arch = "x86_64")
+))]
 use super::disteez::*;
 
 /// The trait describing distance.
@@ -264,13 +270,14 @@ impl Distance<f32> for DistDot {
         //
         cfg_if::cfg_if! {
             if #[cfg(all(feature = "simdeez_f", any(target_arch = "x86", target_arch = "x86_64")))] {
-                if is_x86_feature_detected!("avx2") {
-                    distance_dot_f32_simdeez(va, vb)
-                } else if is_x86_feature_detected!("sse2") {
+                // distance_dot_f32_simdeez dispatches on the detected
+                // instruction set internally (simd_runtime_generate!), so
+                // avx2 and sse2 share one branch.
+                if is_x86_feature_detected!("avx2") || is_x86_feature_detected!("sse2") {
                     distance_dot_f32_simdeez(va, vb)
                 }
                 else {
-                    return scalar_dot_f32(va, vb);
+                    scalar_dot_f32(va, vb)
                 }
             } else if #[cfg(feature = "stdsimd")] {
                 return distance_dot_f32_simd_iter(va,vb);
@@ -750,7 +757,6 @@ impl<T: Copy + Clone + Sized + Send + Sync, F: Float> Distance<T> for DistPtr<T,
 //=======================================================================================
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
 
