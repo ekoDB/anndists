@@ -1,12 +1,12 @@
 [package]
 name = "anndists"
-version = "0.1.4"
-authors = ["jeanpierre.both@gmail.com"]
-description = "some distances used in Ann related crates"
+version = "0.2.0"
+authors = ["jeanpierre.both@gmail.com", "ekoDB <sean@ekodb.io>"]
+description = "Distances used in ANN related crates - ekoDB-maintained fork of anndists"
 license = "MIT/Apache-2.0"
 readme = "README.md"
 keywords = ["distances", "ann"]
-repository = "https://github.com/jean-pierreBoth/anndists"
+repository = "https://github.com/ekoDB/anndists"
 documentation = "https://docs.rs/anndists"
 edition = "2024"
 
@@ -34,14 +34,14 @@ path = "src/lib.rs"
 cfg-if = { version = "1.0" }
 
 # for //
-rayon = { version = "1.11" }
+rayon = { version = "1.12" }
 num_cpus = { version = "1.17" }
 
 cpu-time = { version = "1.0" }
 num-traits = { version = "0.2" }
 
 
-lazy_static = { version = "1.4" }
+lazy_static = { version = "1.5" }
 
 #
 # decreasing order of log for debug build : (max_level_)trace debug info warn error off
