@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Releases are tagged `vX.Y.Z` on master; unreleased work accumulates under `[Unreleased]` and is converted to a dated version block at release. This repository is an ekoDB-maintained fork of [jean-pierreBoth/anndists](https://github.com/jean-pierreBoth/anndists), forked at version 0.1.4.
 
+## [Unreleased]
+
+### Changed
+
+- **`rust-toolchain.toml` comment no longer names internal repositories.** The comment explaining the pin referred to two internal ekoDB repositories by name in a file that is readable by anyone; it now refers to the other ekoDB Rust repos generically. Comment text only: the pinned toolchain (1.95.0), the `rustfmt` and `clippy` components, and the `minimal` profile are all unchanged.
+
 ## [0.2.0] - 2026-07-02
 
 First versioned release of the ekoDB fork. Upstream had already published 0.1.5 with different content, so the fork jumps to a fresh minor to avoid same-number confusion.
