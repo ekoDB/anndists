@@ -16,7 +16,7 @@ BANNER := "$(BOLD) ██████═╗ ██╗  ██╗  ████�
 SUBTITLE := \
 	"          📐  anndists  •  Distance Kernels (ekoDB fork)" "\n"
 
-.PHONY: all setup build build-release test test-x86 check fmt fmt-md lint lint-fix docs clean deps-check deps-update audit install-hooks versions set-version help
+.PHONY: all setup build build-release test test-x86 check fmt fmt-md lint lint-fix docs clean deps-check deps-update audit install-hooks versions set-version bump-version help
 
 all: build
 
@@ -59,6 +59,7 @@ help:
 	@echo "$(CYAN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(RESET)"
 	@echo "  📋 $(GREEN)make versions$(RESET)           - Show crate version"
 	@echo "  🔢 $(GREEN)make set-version VERSION=x.y.z$(RESET) - Set crate version + refresh Cargo.lock"
+	@echo "  🚀 $(GREEN)make bump-version VERSION=x.y.z$(RESET) - Cap a release: collapse CHANGELOG [Unreleased], set-version, print the commit subject"
 
 # One-time developer setup: everything the other targets rely on. Idempotent.
 setup:
@@ -191,3 +192,46 @@ set-version:
 	@$(CARGO) update -p anndists --precise $(VERSION) 2>/dev/null || $(CARGO) check --quiet
 	@echo "$(GREEN)Version set:$(RESET)"
 	@grep '^version =' Cargo.toml | head -1
+
+# Usage: make bump-version VERSION=0.3.0
+#
+# Caps a release in one step: collapses CHANGELOG.md's "[Unreleased]" heading
+# into a dated version block, reuses set-version for Cargo.toml + Cargo.lock,
+# and prints the exact commit subject this org's shared public-repo release
+# automation's release-cap detector matches (a subject of exactly
+# "chore(<scope>): vX.Y.Z", scope optional, plain version) to cut the tag once
+# that commit reaches master. This repo has no pre-release ladder -- it
+# releases directly when a change is ready, so VERSION must be a plain x.y.z;
+# a pre-release/build-metadata suffix is refused outright, since that detector
+# never matches one anyway and a half-applied "pre-release" CHANGELOG entry
+# would just be dead weight.
+#
+# Edits files only. Never commits, tags, or pushes -- review the diff (git
+# diff), then commit CHANGELOG.md, Cargo.toml and Cargo.lock together by hand.
+bump-version:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Error: VERSION is required. Usage: make bump-version VERSION=0.3.0$(RESET)"; \
+		exit 1; \
+	fi
+	@if ! echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$'; then \
+		echo "$(RED)Error: bump-version only cuts a plain release (x.y.z, no pre-release/build suffix).$(RESET)"; \
+		echo "$(RED)This repo has no pre-release ladder, and a pre-release subject never satisfies the release-cap detector. Got: $(VERSION)$(RESET)"; \
+		echo "$(YELLOW)For a scratch/local version bump that must not be read as a release cap, use 'make set-version VERSION=$(VERSION)' instead (it does not touch CHANGELOG.md).$(RESET)"; \
+		exit 1; \
+	fi
+	@if ! grep -q '^## \[Unreleased\]$$' CHANGELOG.md; then \
+		echo "$(RED)Error: CHANGELOG.md has no '## [Unreleased]' block to collapse.$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)Collapsing CHANGELOG.md [Unreleased] into [$(VERSION)]...$(RESET)"
+	@sed -i.bak "s/^## \[Unreleased\]$$/## [$(VERSION)] - $$(date -u +%Y-%m-%d)/" CHANGELOG.md && rm -f CHANGELOG.md.bak
+	@$(MAKE) --no-print-directory set-version VERSION=$(VERSION)
+	@echo ""
+	@echo "$(GREEN)✅ CHANGELOG.md collapsed and Cargo.toml/Cargo.lock set to $(VERSION).$(RESET)"
+	@echo "$(YELLOW)Review the diff (git diff), then commit CHANGELOG.md, Cargo.toml and Cargo.lock together as:$(RESET)"
+	@echo ""
+	@echo "    chore(*): v$(VERSION)"
+	@echo ""
+	@echo "$(YELLOW)That exact subject is required verbatim -- it is what this org's shared public-repo release$(RESET)"
+	@echo "$(YELLOW)automation matches to cut the v$(VERSION) tag and publish the Release once the commit reaches master.$(RESET)"
+	@echo "$(YELLOW)This target never commits, tags, or pushes -- do that by hand after reviewing the diff.$(RESET)"
