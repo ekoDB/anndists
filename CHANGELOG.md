@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Rel
 
 ## [Unreleased]
 
+### Added
+
+- **`make bump-version VERSION=x.y.z`** (#7). Caps a release in one step: collapses `CHANGELOG.md`'s `[Unreleased]` heading into a dated version block, reuses `set-version` to set `Cargo.toml` + refresh `Cargo.lock`, and prints the exact commit subject (`chore(*): vX.Y.Z`) this org's shared public-repo release automation's release-cap detector matches. Only a plain `x.y.z` is accepted — this repo releases directly with no pre-release ladder, and a pre-release/build-metadata suffix is refused outright since the detector never tags on one. Edits files only; never commits, tags, or pushes.
+
 ### Changed
 
 - **`rust-toolchain.toml` comment no longer names internal repositories.** The comment explaining the pin referred to two internal ekoDB repositories by name in a file that is readable by anyone; it now refers to the other ekoDB Rust repos generically. Comment text only: the pinned toolchain (1.95.0), the `rustfmt` and `clippy` components, and the `minimal` profile are all unchanged.
